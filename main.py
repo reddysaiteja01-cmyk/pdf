@@ -13,7 +13,7 @@ QR_FILE = FILE_DIR / "download_qr.png"
 FAVICON_FILE = FILE_DIR / "favicon.ico"
 
 # Replace this with your actual Render URL once deployed
-PUBLIC_DOWNLOAD_URL = "https://your-app.onrender.com/download"
+PUBLIC_DOWNLOAD_URL = "https://pdfsacnit.onrender.com/download"
 
 @app.on_event("startup")
 def generate_qr_code():
