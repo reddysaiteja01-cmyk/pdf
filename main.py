@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Response
 from fastapi.responses import FileResponse
 from pathlib import Path
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageDraw, ImageEnhance
 import qrcode
 import logging
 
@@ -17,7 +17,7 @@ FILE_DIR.mkdir(exist_ok=True)
 PDF_FILE = FILE_DIR / "Occupancy_Certificate.pdf"
 QR_FILE = FILE_DIR / "download_qr.png"
 FAVICON_FILE = FILE_DIR / "favicon.ico"
-LOGO_FILE = FILE_DIR / "logo.png"  # Save your uploaded logo as 'files/logo.png'
+LOGO_FILE = FILE_DIR / "logo.png"
 
 # Public URL for the PDF
 PUBLIC_DOWNLOAD_URL = "https://cdn-buildnow-telangana.onrender.com/download"
@@ -44,30 +44,32 @@ def generate_qr_code():
             try:
                 logo = Image.open(LOGO_FILE).convert("RGBA")
 
-                # Remove white background
-                datas = logo.getdata()
-                new_data = []
-                for item in datas:
-                    if item[0] > 240 and item[1] > 240 and item[2] > 240:
-                        new_data.append((255, 255, 255, 0))  # Make white transparent
-                    else:
-                        new_data.append(item)
-                logo.putdata(new_data)
-
-                # Resize and enhance logo
+                # Resize logo
                 qr_width, qr_height = qr_img.size
                 logo_size = int(qr_width * 0.25)
                 logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
-                logo = ImageEnhance.Sharpness(logo).enhance(2.0)
-                logo = ImageEnhance.Brightness(logo).enhance(1.3)
 
+                # Create circular mask
+                mask = Image.new("L", logo.size, 0)
+                draw = ImageDraw.Draw(mask)
+                draw.ellipse((0, 0, logo.size[0], logo.size[1]), fill=255)
+
+                # Enhance sharpness/brightness if needed
+                logo = ImageEnhance.Sharpness(logo).enhance(2.0)
+                logo = ImageEnhance.Brightness(logo).enhance(1.2)
+
+                # Apply circular mask to logo
+                logo.putalpha(mask)
+
+                # Paste logo to center
                 pos = ((qr_width - logo_size) // 2, (qr_height - logo_size) // 2)
                 qr_img.paste(logo, pos, logo)
-                logger.info("Logo with transparent background added.")
+
+                logger.info("Circular masked logo added to QR code.")
             except Exception as e:
-                logger.warning(f"Error adding logo: {e}")
+                logger.warning(f"Failed to add logo: {e}")
         else:
-            logger.info("Logo file not found. QR generated without logo.")
+            logger.info("Logo not found. Generating QR without it.")
 
         qr_img.convert("RGB").save(QR_FILE)
         logger.info("QR code saved.")
