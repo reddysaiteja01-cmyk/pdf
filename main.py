@@ -12,7 +12,7 @@ FILE_DIR.mkdir(exist_ok=True)
 PDF_FILE = FILE_DIR / "Occupancy_Certificate.pdf"
 QR_FILE = FILE_DIR / "download_qr.png"
 FAVICON_FILE = FILE_DIR / "favicon.ico"
-LOGO_FILE = FILE_DIR / "logo.png"  # Add your logo as 'logo.png' in the files directory
+LOGO_FILE = FILE_DIR / "images.png"  # Add your logo as 'logo.png' in the files directory
 
 # Replace this with your actual Render URL once deployed
 PUBLIC_DOWNLOAD_URL = "https://pdfsacnit.onrender.com/download"
