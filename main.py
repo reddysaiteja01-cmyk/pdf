@@ -20,7 +20,7 @@ FAVICON_FILE = FILE_DIR / "favicon.ico"
 LOGO_FILE = FILE_DIR / "logo.png"  # Your logo image file
 
 # Public URL for the PDF
-PUBLIC_DOWNLOAD_URL = "https://cdn.buildnow.telangana.onrender.com/download"
+PUBLIC_DOWNLOAD_URL = "https://cdn-buildnow-telangana.onrender.com/download"
 
 @app.on_event("startup")
 def generate_qr_code():
