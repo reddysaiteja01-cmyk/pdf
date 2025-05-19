@@ -35,7 +35,7 @@ def generate_qr_code():
 
         logger.info("Generating high-density QR code...")
         qr = qrcode.QRCode(
-            version=15,  # Higher version increases data capacity and complexity
+            version=10,  # Higher version increases data capacity and complexity
             error_correction=qrcode.constants.ERROR_CORRECT_H,
             box_size=10,  # Each "box" of the QR will be 10x10 pixels
             border=4      # Standard border size
