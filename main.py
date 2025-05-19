@@ -3,8 +3,13 @@ from fastapi.responses import FileResponse
 from pathlib import Path
 from PIL import Image
 import qrcode
+import logging
 
 app = FastAPI()
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Paths
 FILE_DIR = Path("files")
@@ -12,40 +17,51 @@ FILE_DIR.mkdir(exist_ok=True)
 PDF_FILE = FILE_DIR / "Occupancy_Certificate.pdf"
 QR_FILE = FILE_DIR / "download_qr.png"
 FAVICON_FILE = FILE_DIR / "favicon.ico"
-LOGO_FILE = FILE_DIR / "logo.png"  # Add your logo as 'logo.png' in the files directory
+LOGO_FILE = FILE_DIR / "logo.png"  # Your logo image file
 
-# Replace this with your actual Render URL once deployed
+# Public URL for the PDF
 PUBLIC_DOWNLOAD_URL = "https://pdfsacnit.onrender.com/download"
 
 @app.on_event("startup")
 def generate_qr_code():
     """
-    Generate a QR code with a logo in the center pointing to the /download URL.
+    Generate a QR code with optional logo at the center.
     Runs once at startup.
     """
-    if not QR_FILE.exists():
-        # Create the QR code with high error correction
+    try:
+        if QR_FILE.exists():
+            logger.info("QR code already exists. Skipping generation.")
+            return
+
+        logger.info("Generating QR code...")
         qr = qrcode.QRCode(
             error_correction=qrcode.constants.ERROR_CORRECT_H
         )
         qr.add_data(PUBLIC_DOWNLOAD_URL)
         qr.make(fit=True)
-
         qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
 
         if LOGO_FILE.exists():
-            logo = Image.open(LOGO_FILE)
+            try:
+                logo = Image.open(LOGO_FILE)
+                qr_width, qr_height = qr_img.size
+                logo_size = int(qr_width * 0.25)
 
-            # Resize logo
-            qr_width, qr_height = qr_img.size
-            logo_size = int(qr_width * 0.25)  # 25% of QR size
-            logo = logo.resize((logo_size, logo_size), Image.ANTIALIAS)
+                # Use Resampling.LANCZOS instead of deprecated ANTIALIAS
+                logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
 
-            # Position logo at the center
-            pos = ((qr_width - logo_size) // 2, (qr_height - logo_size) // 2)
-            qr_img.paste(logo, pos, mask=logo if logo.mode == "RGBA" else None)
+                pos = ((qr_width - logo_size) // 2, (qr_height - logo_size) // 2)
+                qr_img.paste(logo, pos, mask=logo if logo.mode == "RGBA" else None)
+                logger.info("Logo added to QR code.")
+            except Exception as e:
+                logger.warning(f"Failed to add logo to QR: {e}")
+        else:
+            logger.info("Logo file not found. Generating QR without logo.")
 
         qr_img.save(QR_FILE)
+        logger.info("QR code generated and saved.")
+    except Exception as e:
+        logger.error(f"QR generation failed: {e}")
 
 @app.get("/download", response_class=FileResponse)
 def download_pdf():
