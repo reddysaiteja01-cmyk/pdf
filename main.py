@@ -17,16 +17,13 @@ FILE_DIR.mkdir(exist_ok=True)
 PDF_FILE = FILE_DIR / "Occupancy_Certificate.pdf"
 QR_FILE = FILE_DIR / "download_qr.png"
 FAVICON_FILE = FILE_DIR / "favicon.ico"
-LOGO_FILE = FILE_DIR / "logo.png"
+LOGO_FILE = FILE_DIR / "logo.png"  # Save your uploaded logo as 'files/logo.png'
 
 # Public URL for the PDF
 PUBLIC_DOWNLOAD_URL = "https://cdn-buildnow-telangana.onrender.com/download"
 
 @app.on_event("startup")
 def generate_qr_code():
-    """
-    Generate a high-density QR code with transparent logo.
-    """
     try:
         if QR_FILE.exists():
             logger.info("QR code already exists. Skipping generation.")
@@ -41,42 +38,39 @@ def generate_qr_code():
         )
         qr.add_data(PUBLIC_DOWNLOAD_URL)
         qr.make(fit=True)
-        qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGB")
+        qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
 
         if LOGO_FILE.exists():
             try:
                 logo = Image.open(LOGO_FILE).convert("RGBA")
-                qr_width, qr_height = qr_img.size
-                logo_size = int(qr_width * 0.25)
 
-                # Resize logo with high-quality resampling
-                logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
-
-                # Remove white background (make white pixels transparent)
+                # Remove white background
                 datas = logo.getdata()
                 new_data = []
                 for item in datas:
                     if item[0] > 240 and item[1] > 240 and item[2] > 240:
-                        new_data.append((255, 255, 255, 0))  # Transparent
+                        new_data.append((255, 255, 255, 0))  # Make white transparent
                     else:
                         new_data.append(item)
                 logo.putdata(new_data)
 
-                # Enhance logo sharpness and brightness
+                # Resize and enhance logo
+                qr_width, qr_height = qr_img.size
+                logo_size = int(qr_width * 0.25)
+                logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
                 logo = ImageEnhance.Sharpness(logo).enhance(2.0)
-                logo = ImageEnhance.Brightness(logo).enhance(1.5)
+                logo = ImageEnhance.Brightness(logo).enhance(1.3)
 
-                # Paste logo onto QR
-                qr_img = qr_img.convert("RGBA")
-                qr_img.paste(logo, ((qr_width - logo_size) // 2, (qr_height - logo_size) // 2), logo)
-                logger.info("Logo with transparency added to QR code.")
+                pos = ((qr_width - logo_size) // 2, (qr_height - logo_size) // 2)
+                qr_img.paste(logo, pos, logo)
+                logger.info("Logo with transparent background added.")
             except Exception as e:
-                logger.warning(f"Failed to process and paste logo: {e}")
+                logger.warning(f"Error adding logo: {e}")
         else:
-            logger.info("Logo file not found. Generating QR without logo.")
+            logger.info("Logo file not found. QR generated without logo.")
 
         qr_img.convert("RGB").save(QR_FILE)
-        logger.info("High-density QR code generated and saved.")
+        logger.info("QR code saved.")
     except Exception as e:
         logger.error(f"QR generation failed: {e}")
 
