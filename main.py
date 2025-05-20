@@ -22,9 +22,9 @@ PDF_FILES = {
         "qr_file": "occupancy_qr.png",
         "route": "occupancy-certificate"
     },
-    "building_approval": {
+    "occupany": {
         "filename": "Occupancy certificate.pdf",
-        "qr_file": "occupanc.png",
+        "qr_file": "occupancy.png",
         "route": "occupancy_certificate"
     }
 }
