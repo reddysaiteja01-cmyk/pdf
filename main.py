@@ -18,14 +18,14 @@ FILE_DIR.mkdir(exist_ok=True)
 # List of PDFs and public download endpoints
 PDF_FILES = {
     "occupancy_certificate": {
-        "filename": "Occupancy_Certificate .pdf",
+        "filename": "Occupancy certificate .pdf",
         "qr_file": "occupancy_qr.png",
         "route": "occupancy-certificate"
     },
     "building_approval": {
-        "filename": "Occupancy_Certificate.pdf",
+        "filename": "Occupancy certificate.pdf",
         "qr_file": "occupanc.png",
-        "route": "occupancy"
+        "route": "occupancy_certificate"
     }
 }
 
