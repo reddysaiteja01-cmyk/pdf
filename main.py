@@ -19,7 +19,7 @@ FILE_DIR.mkdir(exist_ok=True)
 # Only one PDF and one route
 PDF_FILES = {
     "occupancy_certificate": {
-        "filename": "Occupancy certificate.pdf",
+        "filename": "Occupancy Certificate.pdf",
         "qr_file": "occupancy.png",
         "route": "occupancy_certificate"
     }
