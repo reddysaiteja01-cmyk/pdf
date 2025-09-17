@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageEnhance
 import qrcode
 import logging
+import os
 
 app = FastAPI()
 
@@ -15,14 +16,9 @@ logger = logging.getLogger(__name__)
 FILE_DIR = Path("files")
 FILE_DIR.mkdir(exist_ok=True)
 
-# List of PDFs and public download endpoints
+# Only one PDF and one route
 PDF_FILES = {
     "occupancy_certificate": {
-        "filename": "Occupancy certificate .pdf",
-        "qr_file": "occupancy_qr.png",
-        "route": "occupancy-certificate"
-    },
-    "occupany": {
         "filename": "Occupancy certificate.pdf",
         "qr_file": "occupancy.png",
         "route": "occupancy_certificate"
@@ -46,16 +42,15 @@ def generate_qr_code(pdf_key: str, public_url: str, qr_path: Path):
         qr.make(fit=True)
         qr_img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
 
-        # Add logo to QR code
+        # Add logo if available
         if LOGO_FILE.exists():
             try:
                 logo = Image.open(LOGO_FILE).convert("RGBA")
-
                 qr_width, qr_height = qr_img.size
                 logo_size = int(qr_width * 0.25)
                 logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
 
-                # Create circular mask
+                # Circular mask
                 mask = Image.new("L", logo.size, 0)
                 draw = ImageDraw.Draw(mask)
                 draw.ellipse((0, 0, logo.size[0], logo.size[1]), fill=255)
@@ -63,12 +58,10 @@ def generate_qr_code(pdf_key: str, public_url: str, qr_path: Path):
                 # Enhance logo
                 logo = ImageEnhance.Sharpness(logo).enhance(2.0)
                 logo = ImageEnhance.Brightness(logo).enhance(1.2)
-
                 logo.putalpha(mask)
 
                 pos = ((qr_width - logo_size) // 2, (qr_height - logo_size) // 2)
                 qr_img.paste(logo, pos, logo)
-
                 logger.info("Logo added to QR code.")
             except Exception as e:
                 logger.warning(f"Failed to add logo: {e}")
@@ -88,6 +81,22 @@ def generate_all_qrs():
             generate_qr_code(key, public_url, qr_path)
         else:
             logger.info(f"QR for {key} already exists. Skipping.")
+
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    """Simple homepage with links"""
+    html = "<h2>Available Downloads & QR Codes</h2><ul>"
+    for key, info in PDF_FILES.items():
+        html += f"""
+        <li>
+            <b>{key}</b><br>
+            <a href='/download/{info["route"]}'>Download PDF</a> |
+            <a href='/qr/{info["route"]}'>View QR</a>
+        </li>
+        """
+    html += "</ul>"
+    return html
 
 
 @app.get("/download/{pdf_name}", response_class=FileResponse)
@@ -122,3 +131,9 @@ def favicon():
     if FAVICON_FILE.exists():
         return FileResponse(FAVICON_FILE)
     return Response(status_code=204)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
